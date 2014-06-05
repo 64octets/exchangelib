@@ -3,7 +3,7 @@ Introduction
 This package endeavours to provide a consistent interface in Twisted Python to a variety of Bitcoin APIs, starting
 with exchanges.
 
-Version: 1.1.0alpha.
+Version: 1.2.0 alpha.
 
 Files & Packages
 =====
@@ -39,14 +39,11 @@ Todo
 
 * first order of business: get the bitstamp observer working well.
 
+* make it clearer that this is about bitcoin exchange APIs and not * APIs
+* collapse individual exchanges into main package with 1 file per exchange?
+* handle TimeoutError/ConnectError properly (lots of these with Huobi)
+
 Changelog
 ======
-v1.01
-* add initial bitfinex data api
-
-v1.0
-* split from twobitbot
-
-v0.99
-* switch bitstamp api code to twistedpusher
-* change exchange APIs to return consistent objects
+1.2.0
+* Add preliminary support for Bitfinex, BTC-E, and Huobi

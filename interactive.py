@@ -10,12 +10,15 @@ from twisted.protocols.basic import LineReceiver
 import twisted.python.log as twisted_log
 
 from bitcoinapis.bitstamp import BitstampDataAPI
+from bitcoinapis.bitfinex import BitfinexDataAPI
+from bitcoinapis.btce import BtceDataAPIv3
+from bitcoinapis.huobi import HuobiDataAPI
 
 log = logging.getLogger(__name__)
 
-EXCHANGES = ('bitstamp', )
+EXCHANGES = ('bitstamp', 'bitfinex', 'btce', 'huobi')
 # todo redo EXCHANGE_COMMANDS with an api interface
-EXCHANGE_COMMANDS = ('ticker', 'orderbook')
+EXCHANGE_COMMANDS = ('ticker', 'orderbook', 'trades')
 COMMANDS = ()
 
 
@@ -55,7 +58,7 @@ class API_REPL(LineReceiver):
 
     def prompt(self):
         prompt = '.'.join(self.add_to_prompt) + self.default_prompt
-        self.transport.write(prompt)
+        self.write(prompt)
 
     @defer.inlineCallbacks
     def exchange_cmd(self, cmd):
@@ -69,24 +72,21 @@ class API_REPL(LineReceiver):
                     """:type: Callable"""
                     ret = yield func()
                     fmted = pformat(ret)
-                    print len(fmted)
-                    self.transport.write(fmted + '\n')
+                    self.writeln(fmted)
                     defer.returnValue(fmted)
                 elif subcmd:
-                    self.transport.write("'{}' is not a valid command.".format(subcmd))
+                    self.writeln("'{}' is not a valid command.".format(subcmd))
                 else:
                     # no sub command specified, print info?
                     pass
                 break
 
-    @staticmethod
-    def intro():
-        print("Welcome! Enter ? for a list of commands.")
+    def intro(self):
+        self.writeln("Welcome! Enter ? for a list of commands.")
 
-    @staticmethod
-    def help(subcmd):
+    def help(self, subcmd):
         subcmd = subcmd or ''
-        print("<exchange> <command> <args>.\n Valid exchanges: {}. \n Valid commands: {}.".format(
+        self.writeln("<exchange> <command> <args>.\n Valid exchanges: {}. \n Valid commands: {}.".format(
             ', '.join(EXCHANGES), ', '.join(EXCHANGE_COMMANDS)))
 
     @staticmethod
@@ -94,11 +94,24 @@ class API_REPL(LineReceiver):
         reactor.stop()
 
     def init_exchange(self, exchange, force=False):
+        # todo could move this to __init__ instead, at least without websocket apis included
         if force or not self.exchange_cache.get(exchange):
             # exchange not in cache, OR force is true
             if exchange == 'bitstamp':
                 self.exchange_cache['bitstamp'] = BitstampDataAPI()
+            elif exchange == 'bitfinex':
+                self.exchange_cache['bitfinex'] = BitfinexDataAPI()
+            elif exchange == 'btce':
+                self.exchange_cache['btce'] = BtceDataAPIv3()
+            elif exchange == 'huobi':
+                self.exchange_cache['huobi'] = HuobiDataAPI()
         return self.exchange_cache[exchange]
+
+    def write(self, line):
+        self.transport.write(line)
+
+    def writeln(self, line):
+        self.write(line + '\n')
 
 
 def main():

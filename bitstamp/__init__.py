@@ -2,5 +2,6 @@
 
 from observer import BitstampObserver
 from websocket import BitstampWSAPI
-from http_data import BitstampDataAPI
+from websocket2 import BitstampWebsocketAPI2
+from data import BitstampDataAPI
 

@@ -5,7 +5,7 @@ import json
 import time
 from decimal import Decimal
 
-import twistedpusher
+from twistedpusher import Pusher
 
 from bitcoinapis.datatypes import Trade, Order, OrderBook, BitstampOrderChange
 from bitcoinapis import utils
@@ -30,7 +30,7 @@ class BitstampWSAPI(object):
 
         # Initializing _pusher in class (where =None) instead of init makes it blow up spectacularly.
         if not self._pusher:
-            BitstampWSAPI._pusher = twistedpusher.Client(BitstampWSAPI.APP_KEY)
+            BitstampWSAPI._pusher = Pusher(BitstampWSAPI.APP_KEY)
             pass
 
     def add_trade_listener(self, listener):

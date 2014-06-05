@@ -135,24 +135,3 @@ class BitstampDataAPI(PublicHTTP_API):
                 return response
         data.addCallback(_check_error)
         return data
-
-
-def main():
-    import twisted.python.log
-    obs = twisted.python.log.PythonLoggingObserver()
-    obs.start()
-    logging.basicConfig(level=logging.DEBUG)
-
-    def say(msg):
-        print(msg)
-
-    api = BitstampDataAPI()
-    api.trades().addCallback(say)
-    api.eur_usd_conversion_rate().addCallback(say)
-
-    from twisted.internet import reactor
-    reactor.run()
-
-
-if __name__ == '__main__':
-    main()

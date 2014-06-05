@@ -1,17 +1,19 @@
 Bitstamp has 2 data APIs, HTTP and websocket through Pusher.
 
-Websocket
-=========
+Documentation: [HTTP](https://www.bitstamp.net/api/), [Websocket](https://www.bitstamp.net/websocket/)
+
+Websocket (via Pusher)
+======================
 Pusher key `de504dc5763aeef9ff52`
 
 Channels:
 
-* live_trades, event `trade`
+* `live_trades`, event `trade`
     Streams orders
 * `orderbook`, event `data`
     Streams orderbook. Not very useful, has a nasty habit of not triggering for a while
     (60s+) and is limited to a small number of orders
-* live_orders (unofficial), events `order_created`, `order_deleted`, `order_changed`
+* `live_orders` (undocumented), events `order_created`, `order_deleted`, `order_changed`
     All modifications to the entire orderbook
 
 HTTP Data

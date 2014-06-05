@@ -9,7 +9,7 @@ from twisted.internet import task, defer
 log = logging.getLogger(__name__)
 
 # todo find a better location for this
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 
 
 ###########################################
