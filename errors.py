@@ -2,8 +2,12 @@
 
 
 class APIError(IOError):
-    """Issue with an API - no recent data etc."""
+    """Problem with an API - such as no recent data available"""
 
 
 class HTTPError(IOError):
-    """Issue with an HTTP resonse."""
+    """Problem with an HTTP resonse, such as a 400 code."""
+
+
+class ConnectionError(IOError):
+    """Problem with the connection, such as a timeout."""

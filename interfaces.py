@@ -4,11 +4,11 @@ from zope.interface import Interface
 
 
 class IDataAPI(Interface):
-    def ticker(**kwargs):
+    def ticker(pair='btcusd'):
         """"""
 
-    def orderbook(**kwargs):
+    def orderbook(pair='btcusd'):
         """"""
 
-    def trades(**kwargs):
+    def trades(pair='btcusd'):
         """"""

@@ -6,7 +6,7 @@ from collections import deque
 
 
 from bitcoinapis import datatypes
-from bitcoinapis.bitstamp import websocket
+from bitcoinapis.bitstamp.websocket import BitstampWebsocketAPI2
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 class BitstampObserver(object):
     def __init__(self):
-        self.api = websocket.BitstampWSAPI()
+        self.api = BitstampWebsocketAPI2()
 
         self._highestbid = None
         self._lowestask = None
@@ -30,9 +30,9 @@ class BitstampObserver(object):
 
         self.trade_listeners = set()
 
-        self.api.add_trade_listener(self.on_trade)
-        self.api.add_orderbook_listener(self.on_orderbook)
-        self.api.add_liveorder_listener(self.on_order_change)
+        self.api.listen('trade', self.on_trade)
+        self.api.listen('orderbook', self.on_orderbook)
+        self.api.listen('orderchange', self.on_order_change)
 
     @property
     def highestbid(self):
@@ -88,7 +88,6 @@ class BitstampObserver(object):
         """
         try:
             if self.orderbook.bids[-1].price < data.price < self.orderbook.asks[-1].price:
-                #log.info("got a change, %s" % (data, ))
                 pass
             #todo update orderbook with this info
         except (IndexError, AttributeError):
@@ -149,8 +148,8 @@ def main():
     def inform():
         if len(obs.orderbook.bids) > 0:
             try:
-                print("Highest bid %.2f, lowest ask %.2f; lowest bid %.2f and highest ask %.2f." %
-                      (obs.highestbid, obs.lowestask, obs.orderbook.bids[-1].price, obs.orderbook.asks[-1].price))
+                print("Highest bid {:.2f}, lowest ask {:.2f}; lowest bid {:.2f} and highest ask {:.2f}.".format(
+                      obs.highestbid, obs.lowestask, obs.orderbook.bids[-1].price, obs.orderbook.asks[-1].price))
                 pass
             except TypeError as e:
                 log.debug("Error: {0}".format(e.message))

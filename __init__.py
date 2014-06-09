@@ -1,3 +1,10 @@
 #!/usr/bin/env python
 
-from bitstamp import BitstampWSAPI, BitstampObserver, BitstampWebsocketAPI2
+import logging
+logging.getLogger(__name__).addHandler(logging.NullHandler())
+
+try:
+    from bitcoinapis.bitstamp import BitstampObserver
+    from bitcoinapis.bitstamp import BitstampWebsocketAPI2
+except ImportError:
+    pass

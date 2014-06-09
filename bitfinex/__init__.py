@@ -1,3 +1,4 @@
 #!/usr/bin/env python
 
-from data import BitfinexDataAPI
+from bitcoinapis.bitfinex.data import *
+from bitcoinapis.bitfinex.private import *

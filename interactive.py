@@ -9,10 +9,7 @@ from twisted.internet import reactor, stdio, defer
 from twisted.protocols.basic import LineReceiver
 import twisted.python.log as twisted_log
 
-from bitcoinapis.bitstamp import BitstampDataAPI
-from bitcoinapis.bitfinex import BitfinexDataAPI
-from bitcoinapis.btce import BtceDataAPIv3
-from bitcoinapis.huobi import HuobiDataAPI
+from bitcoinapis import bitstamp, bitfinex, btce, huobi
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +19,7 @@ EXCHANGE_COMMANDS = ('ticker', 'orderbook', 'trades')
 COMMANDS = ()
 
 
-class API_REPL(LineReceiver):
+class ApiRepl(LineReceiver):
     """"""
     # IMPORTANT NOTE: do NOT use print, only self.transport.write.
     delimiter = '\n'
@@ -30,7 +27,10 @@ class API_REPL(LineReceiver):
 
     def __init__(self):
         self.add_to_prompt = list()
-        self.exchange_cache = {}
+        self.exchanges = {'bitstamp': bitstamp,
+                          'bitfinex': bitfinex,
+                          'btce': btce,
+                          'huobi': huobi}
 
     def connectionMade(self):
         self.intro()
@@ -64,7 +64,7 @@ class API_REPL(LineReceiver):
     def exchange_cmd(self, cmd):
         for exchange in EXCHANGES:
             if cmd.startswith(exchange):
-                api = self.init_exchange(exchange)
+                api = self.exchanges[exchange]
                 subcmd = cmd[len(exchange)+1:]
 
                 if subcmd in EXCHANGE_COMMANDS:
@@ -93,20 +93,6 @@ class API_REPL(LineReceiver):
     def quit():
         reactor.stop()
 
-    def init_exchange(self, exchange, force=False):
-        # todo could move this to __init__ instead, at least without websocket apis included
-        if force or not self.exchange_cache.get(exchange):
-            # exchange not in cache, OR force is true
-            if exchange == 'bitstamp':
-                self.exchange_cache['bitstamp'] = BitstampDataAPI()
-            elif exchange == 'bitfinex':
-                self.exchange_cache['bitfinex'] = BitfinexDataAPI()
-            elif exchange == 'btce':
-                self.exchange_cache['btce'] = BtceDataAPIv3()
-            elif exchange == 'huobi':
-                self.exchange_cache['huobi'] = HuobiDataAPI()
-        return self.exchange_cache[exchange]
-
     def write(self, line):
         self.transport.write(line)
 
@@ -120,7 +106,7 @@ def main():
         sys.exit(0)
     twisted_log.PythonLoggingObserver().start()
     logging.basicConfig(level=logging.WARNING)
-    stdio.StandardIO(API_REPL())
+    stdio.StandardIO(ApiRepl())
     reactor.run()
 
 

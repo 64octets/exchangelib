@@ -1,3 +1,3 @@
 #!/usr/bin/env python
 
-from data_v3 import BtceDataAPIv3
+from bitcoinapis.btce.data_v3 import *
