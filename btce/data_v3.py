@@ -13,7 +13,7 @@ __all__ = ['ticker', 'orderbook', 'trades', 'pair_info']
 
 # todo pairs/currencies
 PAIRS = ['btcusd']
-DATA_API_URL = "https://btc-e.com/api/3"
+DATA_API_URL = "https://btc-e.com/api/3/"
 
 # API v3
 # todo support multi-pair queries
@@ -47,4 +47,4 @@ def _convert_pair(pair):
 
 
 def _make_url(api_call, pair=None):
-    return DATA_API_URL + '/' + api_call + '/' + _convert_pair(pair) + '/'
+    return DATA_API_URL + api_call + '/' + _convert_pair(pair) + '/'

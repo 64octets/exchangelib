@@ -51,11 +51,11 @@ def stats(pair='btcusd'):
 
 def pairs():
     """Get a list of valid pairs."""
-    return get_json(url=_make_url('pairs'))
+    return get_json(url=_make_url('symbols'))
 
 
 def _make_url(api_call, pair=None):
-    url = DATA_API_URL + '/' + api_call + '/'
+    url = DATA_API_URL + api_call
     if pair:
-        url += pair + '/'
+        url += '/' + pair
     return url

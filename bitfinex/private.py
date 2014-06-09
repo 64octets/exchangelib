@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 __all__ = ['Auth', 'active_orders']
 
 API_VERSION = 'v1'
-PRIVATE_API_URL = "https://api.bitfinex.com/" + API_VERSION
+PRIVATE_API_URL = "https://api.bitfinex.com/" + API_VERSION + '/'
 
 
 # todo handle bitfinex errors
@@ -55,6 +55,6 @@ def active_orders(auth):
 
 def _do_post(api_call, auth, **opts):
     opts['request'] = '/' + API_VERSION + '/' + api_call
-    url = PRIVATE_API_URL + '/' + api_call
+    url = PRIVATE_API_URL + api_call
     return post(url=url,
                 **auth.sign(opts))

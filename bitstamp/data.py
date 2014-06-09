@@ -55,6 +55,8 @@ def orderbook(pair='btcusd', group=True):
     asks        - list of asks
     timestamp   - when the orderbook data was created/returned
     """
+    # todo use get_json decimal_keys instead of this convert function
+    # need to support lists in convert_nums first
     def convert(book):
         return {'bids': [(Decimal(price), Decimal(amount)) for price, amount in book['bids']],
                 'asks': [(Decimal(price), Decimal(amount)) for price, amount in book['asks']]}
@@ -112,4 +114,4 @@ def eur_usd():
 
 
 def _make_url(api_call, pair=None):
-    return DATA_API_URL + '/' + api_call + '/'
+    return DATA_API_URL + api_call + '/'
