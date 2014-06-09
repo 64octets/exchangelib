@@ -7,8 +7,8 @@ from decimal import Decimal
 
 from twistedpusher import Pusher
 
-from bitcoinapis.datatypes import Trade, Order, OrderBook, BitstampOrderChange
-from bitcoinapis.observable import Observable
+from exchangelib.datatypes import Trade, Order, OrderBook, BitstampOrderChange
+from exchangelib.observable import Observable
 
 log = logging.getLogger(__name__)
 

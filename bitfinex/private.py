@@ -7,7 +7,7 @@ import base64
 import hashlib
 import time
 
-from bitcoinapis.utils import post
+from exchangelib.utils import post
 
 log = logging.getLogger(__name__)
 

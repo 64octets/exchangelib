@@ -5,8 +5,8 @@ import time
 from collections import deque
 
 
-from bitcoinapis import datatypes
-from bitcoinapis.bitstamp.websocket import BitstampWebsocketAPI2
+from exchangelib import datatypes
+from exchangelib.bitstamp.websocket import BitstampWebsocketAPI2
 
 log = logging.getLogger(__name__)
 

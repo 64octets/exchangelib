@@ -3,8 +3,8 @@
 import logging
 from zope.interface import moduleProvides
 
-from bitcoinapis.interfaces import IDataAPI
-from bitcoinapis.utils import get_json
+from exchangelib.interfaces import IDataAPI
+from exchangelib.utils import get_json
 
 log = logging.getLogger(__name__)
 moduleProvides(IDataAPI)

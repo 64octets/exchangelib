@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from bitcoinapis.bitstamp.observer import BitstampObserver
-from bitcoinapis.bitstamp.websocket import BitstampWebsocketAPI2
-from bitcoinapis.bitstamp.websocket import BitstampWebsocketAPI2 as Websocket
-from bitcoinapis.bitstamp.data import *
+from exchangelib.bitstamp.observer import BitstampObserver
+from exchangelib.bitstamp.websocket import BitstampWebsocketAPI2
+from exchangelib.bitstamp.websocket import BitstampWebsocketAPI2 as Websocket
+from exchangelib.bitstamp.data import *

@@ -4,7 +4,7 @@ import mock
 from twisted.trial import unittest
 from twisted.internet import defer, task
 
-from bitcoinapis.utils import poll
+from exchangelib.utils import poll
 
 
 class PollTestCase(unittest.TestCase):

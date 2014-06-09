@@ -9,7 +9,7 @@ from twisted.internet import reactor, stdio, defer
 from twisted.protocols.basic import LineReceiver
 import twisted.python.log as twisted_log
 
-from bitcoinapis import bitstamp, bitfinex, btce, huobi
+from exchangelib import bitstamp, bitfinex, btce, huobi
 
 log = logging.getLogger(__name__)
 

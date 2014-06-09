@@ -1,6 +1,6 @@
 Introduction
 =====
-This package endeavours to provide a consistent interface in Python to a variety of Bitcoin exchange APIs.
+This is a project to provide a consistent interface to a variety of Bitcoin exchange APIs in Python.
 
 Note that it currently requires Twisted.
 
@@ -8,7 +8,7 @@ Version: 1.3.0 alpha.
 
 Files & Packages
 =====
-* `bitcoinapis` is a package containing code that directly interfaces with exchanges.
+* `exchangelib` is a package containing code that directly interfaces with exchanges.
     * `bitstamp` modules related to the Bitstamp exchange.
         * `websocket` is an interface to Bitstamp's Pusher websocket data API.
         * `observer` WIP, observers are meant to provide a consistent way to see exchange data.
@@ -47,7 +47,7 @@ Future: Kraken, Vault of Satoshi, Mintpal
 * improve decimal/int conversion
 * Dynamically generate API call functions
 
-* remove/replace bitcoinapis.datatypes (currently used only by bitstamp.websocket) 
+* remove/replace exchangelib.datatypes (currently used only by bitstamp.websocket) 
 
 Thoughts
 ========

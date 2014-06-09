@@ -6,7 +6,7 @@ import json
 import treq
 from twisted.internet import task, defer
 
-from bitcoinapis.errors import HTTPError
+from exchangelib.errors import HTTPError
 
 log = logging.getLogger(__name__)
 

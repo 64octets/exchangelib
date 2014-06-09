@@ -1,4 +1,4 @@
 #!/usr/bin/env python
 
-from bitcoinapis.bitfinex.data import *
-from bitcoinapis.bitfinex.private import *
+from exchangelib.bitfinex.data import *
+from exchangelib.bitfinex.private import *

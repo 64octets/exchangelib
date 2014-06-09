@@ -3,8 +3,8 @@
 from twisted.trial import unittest
 from zope.interface.verify import verifyObject
 
-from bitcoinapis.bitstamp import data
-from bitcoinapis.interfaces import IDataAPI
+from exchangelib.bitstamp import data
+from exchangelib.interfaces import IDataAPI
 
 
 class DataTestCase(unittest.TestCase):
