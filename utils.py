@@ -1,111 +1,17 @@
 #!/usr/bin/env python
 
 import logging
-from collections import defaultdict
-from functools import wraps
-
+from decimal import Decimal
+import json
+import treq
 from twisted.internet import task, defer
+
+from bitcoinapis.errors import HTTPError
 
 log = logging.getLogger(__name__)
 
 # todo find a better location for this
-VERSION = '1.2.0'
-
-
-###########################################
-##### Observable notes
-# https://stackoverflow.com/questions/1904351/python-observer-pattern-examples-tips
-# realized that this isn't exactly what i'm looking for, since i want to hook function outputs and not inputs.
-
-# todo pypubsub or pydispatch for observers
-# I can't just use pubsub/dispatch for API code because it needs to lazy-load the connection.
-# is there any way to do that?
-# todo consider adding the possibility to listen to inputs instead of outputs, or even both
-
-
-class Observable(object):
-    def __init__(self):
-        self._listeners = defaultdict(set)
-
-    def listen(self, method_name, listener):
-        """
-        Bind a callable to listen to a method - it gets called with the return value whenever that method is called.
-        :type method_name: str
-        :raises ValueError: if method_name is not a valid method name, or if listener is not callable.
-        """
-        if not callable(listener):
-            raise ValueError("'{}' is an invalid listener since it is not callable.".format(listener))
-        elif not hasattr(self, method_name):
-            raise ValueError("{} is not a method".format(method_name))
-
-        method_listeners = self._listeners[method_name]
-        """:type: set"""
-        method_listeners.add(listener)
-
-        if len(method_listeners) == 1:
-            first = True
-
-            # If this is the first listener, then set up the method wrapper
-
-            # method_name verified to exist at top
-            method = getattr(self, method_name)
-
-            @wraps(method)
-            def method_wrapper(*args, **kwargs):
-                # todo should i be ignoring null results from func call?
-                result = method(*args, **kwargs)
-                if result:
-                    for l in method_listeners:
-                        l(result)
-            # Replace the original method with the wrapper
-            setattr(self, method_name, method_wrapper)
-        else:
-            first = False
-        self.hook_listen(method_name, listener, is_first=first)
-
-    def unlisten(self, method_name, listener):
-        # todo add :raises: documentation for (un)listen
-
-        # Get any existing listeners
-        method_listeners = self._listeners[method_name]
-        """:type: set"""
-
-        if method_listeners:
-            # Remove the listener
-            try:
-                method_listeners.remove(listener)
-            except KeyError:
-                pass
-                # todo, valueerror? listener was not bound
-
-            # If this was the last listener, then remove the method wrapper
-            if not method_listeners:
-                is_last = True
-                self._listeners.pop(method_name, None)
-                # todo error handling for getattr calls
-                method = getattr(self, method_name)
-                setattr(self, method_name, method.__wrapped__)
-            else:
-                is_last = False
-            self.hook_unlisten(method_name, listener, is_last=is_last)
-        else:
-            raise ValueError("No listeners registered for {}".format(method_name))
-
-    def hook_listen(self, method_name, listener, is_first=False):
-        """
-        Meant to be overriden, called by listen()
-
-        :type method_name: str
-        :param is_first: whether this was the first listener added to the method.
-        """
-
-    def hook_unlisten(self, method_name, listener, is_last=False):
-        """
-        Meant to be overriden, called by unlisten()
-
-        :type method_name: str
-        :param is_last: whether the last listener for this method was just removed.
-        """
+VERSION = '1.3.0'
 
 
 # todo rethink passing deferred to processor? only reason is error processing...
@@ -136,3 +42,100 @@ def poll(interval, target, processor, *args, **kwargs):
     loop = task.LoopingCall(run)
     loop.start(interval)
     return loop
+
+
+def get_json(url, params=None, decimal_keys=None, int_keys=None):
+    """
+    GET a URL, parsing it as JSON.
+
+    :param url: the URL to GET
+    :type url: str or unicode
+    :param params: parameters to pass in the URL
+    :type params: dict
+    :param decimal_keys: optional list of JSON keys to parse as Decimals
+    :type decimal_keys: Iterable
+    :param int_keys: optional list of JSON keys to parse as ints
+    :type int_keys: Iterable
+    """
+    return get(url, **(params or {})).addCallback(parse_json, decimal_keys, int_keys)
+
+
+def post_json(url, params=None, decimal_keys=None, int_keys=None):
+    raise NotImplementedError
+
+
+def get(url, **params):
+    """
+    GET a URL.
+
+    :param url: an API URL to GET
+    :type url: str or unicode
+    :param params: parameters to pass in the URL
+    :type params: dict
+
+    :returns: the pages content
+    :rtype: defer.Deferred
+
+    :raises HTTPError: via errback if the GET was unsuccessful
+    """
+    # todo fix params so it's like post, since treq lets it include headers etc via headers= params= et al
+    return _request('get', url, params=params)
+
+
+def post(url, **kwargs):
+    return _request('post', url, **kwargs)
+
+
+# todo redirect HTTPError to APIError if an errmsg was returned
+# todo TimeoutError handling and document what this raises
+# todo user agent
+def _request(method, url, **kwargs):
+    def handle(req):
+        if req.code != 200:
+            req.content().addCallback(log.debug)
+            raise HTTPError("Bad status code: {} for URL '{}'".format(req.code, url))
+        else:
+            return req.content()
+    return treq.request(method, url, **kwargs).addCallback(handle)
+
+
+def parse_json(data, decimal_keys=None, int_keys=None):
+    """Parse a data blob as JSON, using Decimals and optionally converting specific keys to Decimals or ints.
+
+    :param data: the unparsed JSON
+    :type data: str or unicode
+    :param decimal_keys: keys in the JSON to parse as Decimals, useful if they are formatted as strings
+    :type decimal_keys: Iterable
+    :param int_keys: keys in the JSON to parse as ints
+    :type int_keys: Iterable
+
+    :returns: parsed JSON
+
+    :raises ValueError: if the JSON was unreadable
+    """
+    def hook(obj):
+        return convert_nums(obj, decimal_keys, int_keys)
+    return json.loads(data, object_hook=hook, parse_float=Decimal)
+
+
+def convert_nums(data, decimal_keys=None, int_keys=None):
+    """Convert specific keys in a dict to Decimals and ints.
+
+    :type data: dict
+    :param decimal_keys: keys whose values should be converted to Decimals
+    :type decimal_keys: Iterable
+    :param int_keys: keys whose values should be converted to ints
+    :type int_keys: Iterable
+    """
+    # todo make this more robust and handle lists of results like orderbooks
+    # make dec/int_keys possible to use as just a string instead of list/tuple-only
+    # todo generalize this function further and expose that thru parse_json
+    decimal_keys = decimal_keys or ()
+    int_keys = int_keys or ()
+    for dkey in decimal_keys:
+        if dkey in data:
+            data[dkey] = Decimal(data[dkey])
+    for ikey in int_keys:
+        if ikey in int_keys:
+            data[ikey] = int(data[ikey])
+    return data
