@@ -1,40 +1,47 @@
 # !/usr/bin/env python
 
 import logging
+from zope.interface import moduleProvides
 
-from bitcoinapis.http_api import PublicHTTP_API
+from bitcoinapis.interfaces import IDataAPI
+from bitcoinapis.utils import get_json
 
 log = logging.getLogger(__name__)
+moduleProvides(IDataAPI)
 
-# todo add this one http://market.huobi.com/staticmarket/td.html + td_ltc.html
-# candlestick data
+__all__ = ['ticker', 'orderbook', 'trades', 'candlestick']
+
+PAIRS = ['btccny', 'ltccny']
+DATA_API_URL = "https://market.huobi.com/staticmarket/"
+
+# Example failure:
+# Failure: twisted.internet.error.TimeoutError: User timeout caused connection failure.
+# todo kline
 
 
-class HuobiDataAPI(PublicHTTP_API):
-    API_URL = 'https://market.huobi.com/staticmarket/'
+def ticker(pair='btccny'):
+    return get_json(url=_create_url('ticker', pair))
 
-    @classmethod
-    def ticker(cls, pair='btccny'):
-        pair = cls._convert_pair(pair)
-        return cls._get('ticker_{}'.format(pair))
 
-    @classmethod
-    def orderbook(cls, pair='btccny'):
-        pair = cls._convert_pair(pair)
-        return cls._get('depth_{}'.format(pair))
+def orderbook(pair='btccny'):
+    return get_json(url=_create_url('depth', pair))
 
-    @classmethod
-    def trades(cls, pair='btccny'):
-        """detail doesn't work perfectly for this..."""
-        pair = cls._convert_pair(pair)
-        return cls._get('detail_{}'.format(pair))
 
-    @staticmethod
-    def _convert_pair(pair):
-        """:type pair: str"""
-        # just remove cny from the end. Ugly way to do it, I'm sure there is better.
-        return pair.rsplit('cny')[0]
+# todo, this isn't really trades... more like ticker info + some orderbook/trades
+def trades(pair='btccny'):
+    return get_json(url=_create_url('detail', pair))
 
-    @classmethod
-    def _create_url(cls, api_call):
-        return cls.API_URL + api_call + '_json.js'
+
+def candlestick(pair='btccny'):
+    url = DATA_API_URL + 'td_' + _convert_pair(pair) + '.html'
+    return get_json(url=url)
+
+
+def _convert_pair(pair):
+    """:type pair: str"""
+    # just remove cny from the end. Ugly way to do it, I'm sure there is better.
+    return pair.rsplit('cny')[0]
+
+
+def _create_url(api_call, pair):
+    return DATA_API_URL + api_call + '_' + _convert_pair(pair) + '_json.js'

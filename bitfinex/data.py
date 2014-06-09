@@ -1,55 +1,61 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 
 import logging
+from zope.interface import moduleProvides
 
-from bitcoinapis.http_api import PublicHTTP_API
+from bitcoinapis.interfaces import IDataAPI
+from bitcoinapis.utils import get_json
 
 log = logging.getLogger(__name__)
+moduleProvides(IDataAPI)
 
-PAIRS = ['btcusd', 'ltcusd', 'ltcbtc', 'drkusd', 'drkbtc']
+__all__ = ['ticker', 'orderbook', 'trades', 'lendbook', 'lends', 'stats', 'pairs']
+
+PAIRS = ['btcusd', 'ltcbtc', 'ltcusd', 'drkusd', 'drkbtc']
 CURRENCIES = ['btc', 'usd', 'ltc']
+DATA_API_URL = "https://api.bitfinex.com/v1/"
+
+# todo add support for parameters
+# todo possibly remove limit_bids/limit_asks to simplify
+# todo make something better with pairs and PAIRS/CURRENCIES
 
 
-# todo option to verify specified pairs against current bitfinex ones using the pairs method
-# could also use it to generate list of currencies?
-# todo better way to handle api parameters in _get, e.g. CMD/{symbol} or CMD?opt=True
-# todo consider breaking limit_orders into limit_bids and limit_asks
-class BitfinexDataAPI(PublicHTTP_API):
-    API_URL = "https://api.bitfinex.com/v1/"
+def ticker(pair='btcusd'):
+    return get_json(url=_make_url('pubticker', pair))
 
-    @classmethod
-    def ticker(cls, pair='btcusd'):
-        return cls._get('pubticker/{}'.format(pair))
 
-    @classmethod
-    def stats(cls, pair='btcusd'):
-        """
-        stats/pair
-        1d, 7d, 30d volume statistics
-        """
-        return cls._get('stats/{}'.format(pair))
+def orderbook(pair='btcusd', limit_orders=50, group=True, limit_bids=None, limit_asks=None):
+    # limit_bids/limit_asks optional, overrides limit_orders
+    return get_json(url=_make_url('book', pair))
 
-    @classmethod
-    def orderbook(cls, pair='btcusd', limit_orders=50, group=True):
-        """"""  # todo opts
-        return cls._get('book/{}'.format(pair))
 
-    @classmethod
-    def trades(cls, pair='btcusd', limit_trades=50, timelimit=None):
-        """"""  # todo opts
-        return cls._get('trades/{}'.format(pair))
+def trades(pair='btcusd', limit_orders=50, timelimit=None, limit_bids=None, limit_asks=None):
+    return get_json(url=_make_url('trades', pair))
 
-    @classmethod
-    def pairs(cls):
-        """Returns a list of valid pairs."""
-        return cls._get('symbols')
 
-    @classmethod
-    def lends(cls, currency='usd', limit_trades=50, timelimit=None):
-        """"""  # todo opts
-        return cls._get('lends/{}'.format(currency))
+# todo naming of calls below this
+# particularly stats
 
-    @classmethod
-    def lendbook(cls, currency='usd', limit_orders=50, timelimit=None):
-        """"""  # todo opts
-        return cls._get('lendbook/{}'.format(currency))
+def lendbook(currency='usd', limit_orders=50, group=True, limit_bids=None, limit_asks=None):
+    # semantically broken to pass currency as pair, but it does what is needed
+    return get_json(url=_make_url('lendbook', currency))
+
+
+def lends(currency='usd', limit_orders=50, timelimit=None, limit_bids=None, limit_asks=None):
+    return get_json(url=_make_url('lends', currency))
+
+
+def stats(pair='btcusd'):
+    return get_json(url=_make_url('stats', pair))
+
+
+def pairs():
+    """Get a list of valid pairs."""
+    return get_json(url=_make_url('pairs'))
+
+
+def _make_url(api_call, pair=None):
+    url = DATA_API_URL + '/' + api_call + '/'
+    if pair:
+        url += pair + '/'
+    return url

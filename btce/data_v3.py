@@ -1,42 +1,50 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 
-from bitcoinapis.http_api import PublicHTTP_API
+import logging
+from zope.interface import moduleProvides
 
-# See https://btc-e.com/api/3/documentation
+from bitcoinapis.interfaces import IDataAPI
+from bitcoinapis.utils import get_json
 
+log = logging.getLogger(__name__)
+moduleProvides(IDataAPI)
 
-# todo standardize pair names to btcusd etc instead of btc_usd
+__all__ = ['ticker', 'orderbook', 'trades', 'pair_info']
+
+# todo pairs/currencies
+PAIRS = ['btcusd']
+DATA_API_URL = "https://btc-e.com/api/3"
+
+# API v3
 # todo support multi-pair queries
 # todo add options
-class BtceDataAPIv3(PublicHTTP_API):
-    API_URL = 'https://btc-e.com/api/3/'
 
-    @classmethod
-    def ticker(cls, pair='btcusd'):
-        pair = cls._convert_pair(pair)
-        return cls._get('ticker/{}'.format(pair))
 
-    @classmethod
-    def orderbook(cls, pair='btcusd', limit_orders=150):
-        pair = cls._convert_pair(pair)
-        return cls._get('depth/{}'.format(pair), limit=limit_orders)
+def ticker(pair='btcusd'):
+    # api fails with code 200 and     {u'error': u'Invalid method', u'success': 0}
+    return get_json(url=_make_url('ticker', pair))
 
-    @classmethod
-    def trades(cls, pair='btcusd', limit_trades=150):
-        pair = cls._convert_pair(pair)
-        return cls._get('trades/{}'.format(pair), limit=limit_trades)
 
-    @classmethod
-    def pair_info(cls, pair='btcusd'):
-        # todo naming
-        pair = cls._convert_pair(pair)
-        return cls._get('info/{}'.format(pair))
+def orderbook(pair='btcusd', limit_orders=150):
+    return get_json(url=_make_url('depth', pair))
 
-    @staticmethod
-    def _convert_pair(pair):
-        """Converts a pair in standard form (e.g. btcusd) to BTC-E's format of btc_usd."""
-        if len(pair) == 6:
-            return pair[:3] + '_' + pair[3:]
-        else:
-            # todo
-            pass
+
+def trades(pair='btcusd', limit_trades=150):
+    return get_json(url=_make_url('trades', pair))
+
+
+# todo naming of this ( + entry in __all__)
+def pair_info(pair='btcusd'):
+    return get_json(url=_make_url('info', pair))
+
+
+def _convert_pair(pair):
+    if len(pair) == 6:
+        return pair[:3] + '_' + pair[3:]
+    else:
+        # todo
+        raise ValueError("Cannot convert pair {} because it isn't 6 chars".format(pair))
+
+
+def _make_url(api_call, pair=None):
+    return DATA_API_URL + '/' + api_call + '/' + _convert_pair(pair) + '/'
