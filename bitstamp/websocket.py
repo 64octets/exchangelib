@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from twistedpusher import Pusher
 
-from exchangelib.datatypes import Trade, Order, OrderBook, BitstampOrderChange
+from exchangelib import schemas, simpleschema
 from exchangelib.observable import Observable
 
 log = logging.getLogger(__name__)
@@ -37,22 +37,24 @@ class BitstampWebsocketAPI2(Observable):
         #    BitstampWebsocketAPI2._pusher = twistedpusher.Client(BitstampWebsocketAPI2.APP_KEY)
         #    pass
 
+    # todo switch from time.time to utc
+    @simpleschema.returns(schemas.Trade)
     def trade(self, event):
         data = json.loads(event.data, parse_float=Decimal)
         data['timestamp'] = time.time()
-        trade = Trade(**data)
+        return data
 
-        return trade
-
+    @simpleschema.returns(schemas.OrderBook)
     def orderbook(self, event):
-        book = OrderBook()
-        book.bids = [Order(price=Decimal(pr), amount=Decimal(amt)) for pr, amt in event.data['bids']]
-        book.asks = [Order(price=Decimal(pr), amount=Decimal(amt)) for pr, amt in event.data['bids']]
+        book = dict()
+        book['bids'] = [{'price': pr, 'amount': amt} for pr, amt in event.data['bids']]
+        book['asks'] = [{'price': pr, 'amount': amt} for pr, amt in event.data['bids']]
 
         return book
 
+    @simpleschema.returns(schemas.BitstampOrderChange)
     def orderchange(self, event):
-        data = event.data
+        change = event.data
         if event.name == 'order_created':
             kind = 'created'
         elif event.name == 'order_deleted':
@@ -62,15 +64,10 @@ class BitstampWebsocketAPI2(Observable):
         else:
             return
 
-        data['price'] = Decimal(data['price'])
-        data['amount'] = Decimal(data['amount'])
-        data['timestamp'] = int(data['datetime'])
-        data['change'] = kind
-        data['side'] = 'ask' if bool(int(data['order_type'])) else 'bid'
-        data.pop('datetime')
-        data.pop('order_type')
-        change = BitstampOrderChange(**data)
-        return change
+        change['change'] = kind
+        change['order_type'] = 'ask' if bool(int(change['order_type'])) else 'bid'
+
+        return simpleschema.remap(change, {'datetime': 'timestamp', 'order_type': 'direction'})
 
     def hook_listen(self, method_name, listener, is_first=False):
         methods = {'trade', 'orderbook', 'orderchange'}
@@ -88,6 +85,7 @@ class BitstampWebsocketAPI2(Observable):
 
 def main():
     import twisted.python.log
+
     obs = twisted.python.log.PythonLoggingObserver()
     obs.start()
     logging.basicConfig(level=logging.DEBUG)
@@ -95,11 +93,11 @@ def main():
     api = BitstampWebsocketAPI2()
 
     def inform(trade):
-        print('{:d} {:6.2f} @ ${:.2f}'.format(trade.id, trade.amount, trade.price))
+        print('{:<8d}{:<6.2f} @ ${:.2f}'.format(trade['id'], trade['amount'], trade['price']))
     api.listen('trade', inform)
 
     def inform_order(order):
-        print('{} {:6.2f} @ {:.2f}'.format(order.change, order.amount, order.price))
+        print('{:<8}{:<6.2f} @ ${:<10.2f}{}'.format(order['change'], order['amount'], order['price'], order['timestamp']))
     api.listen('orderchange', inform_order)
 
     from twisted.internet import reactor

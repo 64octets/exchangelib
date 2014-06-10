@@ -6,6 +6,7 @@ from zope.interface import moduleProvides
 
 from exchangelib.interfaces import IDataAPI
 from exchangelib.utils import get_json
+from exchangelib import simpleschema, schemas
 
 log = logging.getLogger(__name__)
 moduleProvides(IDataAPI)
@@ -21,6 +22,7 @@ DATA_API_URL = 'https://www.bitstamp.net/api/'
 # todo module docstring
 
 
+@simpleschema.returns(schemas.Ticker)
 def ticker(pair='btcusd'):
     """
     Get the Bitstamp ticker, which includes data on the last 24 hours.
@@ -37,11 +39,10 @@ def ticker(pair='btcusd'):
     low         - lowest price in last 24h
     high        - highest price in last 24h
     """
-    return get_json(url=_make_url('ticker', pair),
-                    decimal_keys=('volume', 'last', 'bid', 'vwap', 'high', 'low', 'ask'),
-                    int_keys=('timestamp',))
+    return get_json(url=_make_url('ticker', pair))
 
 
+@simpleschema.returns(schemas.OrderBook)
 def orderbook(pair='btcusd', group=True):
     """
     Get the full Bitstamp orderbook.
@@ -55,18 +56,17 @@ def orderbook(pair='btcusd', group=True):
     asks        - list of asks
     timestamp   - when the orderbook data was created/returned
     """
-    # todo use get_json decimal_keys instead of this convert function
-    # need to support lists in convert_nums first
-    def convert(book):
-        return {'bids': [(Decimal(price), Decimal(amount)) for price, amount in book['bids']],
-                'asks': [(Decimal(price), Decimal(amount)) for price, amount in book['asks']]}
-    content = get_json(url=_make_url('order_book', pair),
-                       params={'group': int(group)},
-                       int_keys=('timestamp',))
-                       # decimal_keys={'bids', 'asks'}
-    return content.addCallback(convert)
+    raw = get_json(url=_make_url('order_book', pair),
+                   params={'group': int(group)})
+
+    def reflow(book):
+        book['bids'] = [{'price': b[0], 'amount': b[1]} for b in book['bids']]
+        book['asks'] = [{'price': a[0], 'amount': a[1]} for a in book['asks']]
+        return book
+    return raw.addCallback(reflow)
 
 
+@simpleschema.returns(schemas.TradeList)
 def trades(pair='btcusd', timeframe='minute'):
     """
     Get recent Bitstamp transactions.
@@ -85,22 +85,12 @@ def trades(pair='btcusd', timeframe='minute'):
     valid_timeframes = ('minute', 'hour')
     if timeframe not in valid_timeframes:
         raise ValueError("Invalid timeframe {}", timeframe)
-    # todo
     data = get_json(url=_make_url('transactions', pair),
-                    params={'time': timeframe},
-                    decimal_keys=('price', 'amount'),
-                    int_keys=('tid', 'date'))
-
-    def convert(tradelist):
-        for trade in tradelist:
-            trade['id'] = trade.pop('tid')
-            trade['timestamp'] = trade.pop('date')
-        return tradelist
-    data.addCallback(convert)
-
-    return data
+                    params={'time': timeframe})
+    return data.addCallback(simpleschema.remap, [{'tid': 'id', 'date': 'timestamp'}])
 
 
+@simpleschema.returns(schemas.ConversionRate)
 def eur_usd():
     """
     Get the Bitstamp EUR/USD conversion rate.
@@ -109,8 +99,7 @@ def eur_usd():
     buy         - conversion rate when buying
     sell        - conversion rate when selling
     """
-    return get_json(url=_make_url('eur_usd'),
-                    decimal_keys=('buy', 'sell'))
+    return get_json(url=_make_url('eur_usd'))
 
 
 def _make_url(api_call, pair=None):

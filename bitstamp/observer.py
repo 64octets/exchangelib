@@ -5,7 +5,7 @@ import time
 from collections import deque
 
 
-from exchangelib import datatypes
+from exchangelib import schemas, simpleschema
 from exchangelib.bitstamp.websocket import BitstampWebsocketAPI2
 
 log = logging.getLogger(__name__)
@@ -48,8 +48,6 @@ class BitstampObserver(object):
     def orderbook(self):
         if self._orderbook and self._is_orderbook_fresh():
             return self._orderbook
-        else:
-            return datatypes.OrderBook()
 
     def on_orderbook(self, data):
         """
@@ -64,6 +62,7 @@ class BitstampObserver(object):
         except (KeyError, AttributeError, IndexError):
             log.error("Bad orderbook data received", exc_info=True)
         else:
+            # todo replace time.time call with utc
             self._orderbook = data
             self.last_orderbook = time.time()
 
@@ -79,6 +78,7 @@ class BitstampObserver(object):
             return
         else:
             self.recent_trades.appendleft(data)
+            # todo pop old ones??
             for cb in self.trade_listeners:
                 pass
 
