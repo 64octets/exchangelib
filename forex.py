@@ -69,17 +69,17 @@ class ForexConverter(object):
             else:
                 log.debug("Using rate {} for pair {}{} from data source {}".format(rate, base, quote, dsname))
                 return rate
-            raise ValueError("Unknown currency pair {}{}".format(base, quote))
+        raise ValueError("Unknown currency pair {}{}".format(base, quote))
 
     def update_rates(self):
         """Update exchange rate data"""
         waitfor = list()
         for name, datasource in self.datasources.iteritems():
-            def announce(data):
+            def announce(data, dsname):
                 if data:
-                    log.info("Got new rates from {}".format(name))
+                    log.info("Got new rates from {}".format(dsname, data))
             d = datasource.update()
-            d.addCallback(announce)
+            d.addCallback(announce, name)
             waitfor.append(d)
         return defer.DeferredList(waitfor)
 
