@@ -3,6 +3,8 @@
 import logging
 from decimal import Decimal
 import json
+import time
+import calendar
 import treq
 from twisted.internet import task, defer
 
@@ -27,6 +29,8 @@ def poll(interval, target, processor, *args, **kwargs):
     :raises ValueError: if target or processor are not callable
     """
     # todo rethink passing deferred to processor? only reason is error processing...
+    # todo make processor optional
+    # todo make running it instantly optional ('now' on loop.start)
     # a few options could be useful - such as 'now', 'iterations', and 'clock'.
 
     if not callable(target) or not callable(processor):
@@ -86,7 +90,7 @@ def _request(method, url, **kwargs):
     def handle(req):
         if req.code != 200:
             req.content().addCallback(log.debug)
-            raise HTTPError("Bad status code: {} for URL '{}'".format(req.code, url))
+            raise HTTPError("Bad status code: {} for URL '{}'".format(req.code, url), req.code)
         else:
             return req.content()
 
@@ -110,3 +114,26 @@ def parse_json(data):
     :raises ValueError: if the JSON was unreadable
     """
     return json.loads(data, parse_float=Decimal)
+
+
+def now_in_utc_secs():
+    return int(calendar.timegm(time.gmtime()))
+
+
+class Pair(object):
+    def __init__(self, *args):
+        self.base = self.quote = self.rate = None
+        if len(args) == 1:
+            self.from_string(args[0])
+        elif len(args) == 2 and isinstance(args[0], basestring) and isinstance(args[1], basestring):
+            (self.base, self.quote) = args
+
+    def from_string(self, pair):
+        if len(pair) == 6 and isinstance(pair, basestring):
+            self.base = pair[:3]
+            self.quote = pair[3:]
+        else:
+            raise ValueError("Invalid pair '{}'".format(pair))
+
+    def __str__(self):
+        return "{}{}".format(self.base, self.quote)
