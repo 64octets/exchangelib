@@ -67,17 +67,22 @@ class ApiRepl(LineReceiver):
                 api = self.exchanges[exchange]
                 subcmd = cmd[len(exchange)+1:]
 
-                if subcmd in EXCHANGE_COMMANDS:
-                    func = getattr(api, subcmd)
-                    """:type: Callable"""
-                    ret = yield func()
-                    fmted = pformat(ret)
-                    self.writeln(fmted)
-                    defer.returnValue(fmted)
-                elif subcmd:
-                    self.writeln("'{}' is not a valid command.".format(subcmd))
+                # todo add a-z checking for subcmd to avoid it being stuff like __ attributes
+                if subcmd:
+                    try:
+                        func = getattr(api, subcmd)
+                        """:type: Callable"""
+                    except AttributeError as e:
+                        # todo improve this error message
+                        self.writeln("'{}' is not a valid command.".format(subcmd))
+                    else:
+                        # todo pass options as well
+                        ret = yield func()
+                        fmted = pformat(ret)
+                        self.writeln(fmted)
+                        defer.returnValue(fmted)
                 else:
-                    # no sub command specified, print info?
+                    # todo no sub command specified, print info
                     pass
                 break
 
